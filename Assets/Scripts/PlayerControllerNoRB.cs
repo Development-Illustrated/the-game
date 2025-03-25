@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerControllerNoRB : MonoBehaviour
 {
     [Header("Debug Settings")]
     [SerializeField] private bool debugMode = false;
