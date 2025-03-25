@@ -8,4 +8,11 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Scenes/Network.unity
+    guid: 8a1b5f8966f624eccbcea56950f62087
+  - enabled: 1
+    path: Assets/Scenes/CircleRunningNoRB (Networked).unity
+    guid: 897dd7805e30a46e2a2bde2588efc8a0
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
