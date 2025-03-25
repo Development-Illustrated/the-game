@@ -38,15 +38,6 @@ public class PlayerController : MonoBehaviour
         // Initialize velocity to zero
         velocity = Vector2.zero;
 
-        // Create ground check if it doesn't exist
-        if (groundCheck == null)
-        {
-            GameObject check = new GameObject("GroundCheck");
-            check.transform.parent = transform;
-            check.transform.localPosition = new Vector3(0, -0.5f, 0);
-            groundCheck = check.transform;
-            if (debugMode) Debug.Log("Ground check created. Please adjust its position in the inspector.");
-        }
     }
 
     // Update is called once per frame
@@ -85,12 +76,7 @@ public class PlayerController : MonoBehaviour
 
         // Calculate forces
         Vector2 gravityForce = worldController.CalculateGravity(transform.position) * gravityScale;
-        Vector2 movementForce = tangent * moveInput * moveSpeed;
-
-        // Apply friction based on grounded state
-        float friction = isGrounded ? groundFriction : airFriction;
-        Vector2 tangentialVelocity = Vector2.Dot(velocity, tangent) * tangent;
-        velocity = Vector2.Lerp(velocity, Vector2.zero, 1 - friction) + movementForce;
+        Vector2 movementForce = -tangent * moveInput * moveSpeed;
 
         // If just landed, remove vertical velocity component
         if (isGrounded && !wasGrounded)
@@ -110,6 +96,13 @@ public class PlayerController : MonoBehaviour
             velocity += gravityForce * Time.fixedDeltaTime;
         }
 
+        // Apply movement force to velocity
+        velocity += movementForce * Time.fixedDeltaTime;
+
+        // Apply friction
+        float frictionFactor = isGrounded ? groundFriction : airFriction;
+        velocity *= frictionFactor;
+
         // Limit fall speed
         float verticalSpeed = Vector2.Dot(velocity, -gravityDirection);
         if (verticalSpeed > maxFallSpeed)
@@ -128,7 +121,7 @@ public class PlayerController : MonoBehaviour
 
         // Rotate player so feet point to circle edge (away from center)
         float rotationAngle = worldController.GetAlignmentAngle(transform.position);
-        transform.rotation = Quaternion.Euler(0, 0, rotationAngle + 180f);
+        transform.rotation = Quaternion.Euler(0, 0, rotationAngle + 90f);
 
         // Optional debugging - only draw if debug mode is enabled
         if (debugMode)

@@ -1,4 +1,6 @@
+using System.Numerics;
 using UnityEngine;
+using Vector2 = UnityEngine.Vector2;
 
 public class CircularWorldController : MonoBehaviour
 {
@@ -33,6 +35,11 @@ public class CircularWorldController : MonoBehaviour
     /// <returns>Gravity force vector to apply</returns>
     public Vector2 CalculateGravity(Vector2 position)
     {
+        if (position == Vector2.zero)
+        {
+            position = new Vector2(0f, -0.1f);
+        }
+
         // Calculate gravity direction (from object to world center)
         Vector2 toCenter = (Vector2)transform.position - position;
         Vector2 gravityDirection = toCenter.normalized;
@@ -104,7 +111,7 @@ public class CircularWorldController : MonoBehaviour
     public float GetAlignmentAngle(Vector2 position)
     {
         Vector2 toCenter = (Vector2)transform.position - position;
-        return Mathf.Atan2(toCenter.y, toCenter.x) * Mathf.Rad2Deg + 90;
+        return Mathf.Atan2(toCenter.y, toCenter.x) * Mathf.Rad2Deg + 180f;
     }
 
     /// <summary>
