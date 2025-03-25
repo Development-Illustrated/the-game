@@ -3,6 +3,9 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerControllerRB : MonoBehaviour
 {
+    [Header("Debug Settings")]
+    [SerializeField] private bool debugMode = false;
+
     [Header("Movement Settings")]
     [SerializeField] private float acceleration = 20f;   // Replaces moveSpeed
     [SerializeField] private float maxSpeed = 7f;        // Maximum allowed speed
@@ -26,23 +29,19 @@ public class PlayerControllerRB : MonoBehaviour
     private bool isGrounded = false;
     private float moveInput = 0f;
     private bool jumpRequested = false;
+    private bool wasGrounded = false;
 
+    /// <summary>
+    /// Initializes the player controller components
+    /// </summary>
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-
-        // If graphicsObject wasn't assigned in inspector, try to find a child object
-        if (graphicsObject == null)
-        {
-            // Look for a child named "Graphics" or similar
-            Transform graphics = transform.Find("Graphics");
-            if (graphics != null)
-            {
-                graphicsObject = graphics.gameObject;
-            }
-        }
     }
 
+    /// <summary>
+    /// Configures the rigidbody and gets references to required components
+    /// </summary>
     private void Start()
     {
         // Configure rigidbody
@@ -54,6 +53,9 @@ public class PlayerControllerRB : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Processes player input and checks if the player is grounded
+    /// </summary>
     private void Update()
     {
         // Get input
@@ -69,8 +71,14 @@ public class PlayerControllerRB : MonoBehaviour
         CheckGrounded();
     }
 
+    /// <summary>
+    /// Handles physics-based movement and interactions
+    /// </summary>
     private void FixedUpdate()
     {
+        // Store previous grounded state for debug logging
+        wasGrounded = isGrounded;
+
         // Apply gravity
         ApplyGravity();
 
@@ -92,6 +100,9 @@ public class PlayerControllerRB : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Applies gravity force toward the center of the circular world
+    /// </summary>
     private void ApplyGravity()
     {
         // Get gravity force from world controller
@@ -99,6 +110,9 @@ public class PlayerControllerRB : MonoBehaviour
         rb.AddForce(gravity, ForceMode2D.Force);
     }
 
+    /// <summary>
+    /// Handles player movement based on input, applies acceleration and manages sprite direction
+    /// </summary>
     private void MovePlayer()
     {
         // Get tangent direction for movement along the circular world
@@ -149,6 +163,11 @@ public class PlayerControllerRB : MonoBehaviour
 
         // Cap speed if we're going too fast
         LimitMaxSpeed();
+
+        if (moveInput != 0 && debugMode)
+        {
+            DebugLog($"Moving with input: {moveInput}, Speed: {currentTangentSpeed}/{maxSpeed}");
+        }
     }
 
     /// <summary>
@@ -236,6 +255,9 @@ public class PlayerControllerRB : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Makes the player jump away from the center of the circular world
+    /// </summary>
     private void Jump()
     {
         // Get direction away from center (normalized gravity direction)
@@ -246,8 +268,13 @@ public class PlayerControllerRB : MonoBehaviour
 
         // Reset grounded state
         isGrounded = false;
+
+        DebugLog("Jump executed");
     }
 
+    /// <summary>
+    /// Checks if the player is in contact with the ground or world edge
+    /// </summary>
     private void CheckGrounded()
     {
         // Get direction toward center
@@ -267,8 +294,17 @@ public class PlayerControllerRB : MonoBehaviour
 
             isGrounded = distanceToEdge <= groundCheckDistance;
         }
+
+        // Log state changes
+        if (debugMode && isGrounded != wasGrounded)
+        {
+            DebugLog(isGrounded ? "Player grounded" : "Player left ground");
+        }
     }
 
+    /// <summary>
+    /// Aligns the player's rotation to match the circular world's curvature
+    /// </summary>
     private void AlignWithWorld()
     {
         // Get alignment angle from world controller
@@ -285,6 +321,9 @@ public class PlayerControllerRB : MonoBehaviour
         transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
     }
 
+    /// <summary>
+    /// Ensures the player stays within the world boundaries
+    /// </summary>
     private void ConstrainToWorld()
     {
         // Calculate distance to center
@@ -313,14 +352,47 @@ public class PlayerControllerRB : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Draws debug visualization when debug mode is enabled
+    /// </summary>
     private void OnDrawGizmos()
     {
+        // Only draw gizmos if debug mode is enabled
+        if (!debugMode || worldController == null) return;
+
         // Draw ground check ray
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Vector2 toCenter = ((Vector2)worldController.transform.position - (Vector2)transform.position).normalized;
+        Gizmos.DrawRay(transform.position, toCenter * groundCheckDistance);
+
+        // Draw max speed indicator
+        Gizmos.color = Color.blue;
+        Vector2 tangentDirection = Vector2.zero;
         if (worldController != null)
         {
-            Gizmos.color = isGrounded ? Color.green : Color.red;
-            Vector2 toCenter = ((Vector2)worldController.transform.position - (Vector2)transform.position).normalized;
-            Gizmos.DrawRay(transform.position, toCenter * groundCheckDistance);
+            tangentDirection = worldController.GetTangentDirection(transform.position);
+            // Draw a line showing tangent direction (scaled by max speed)
+            Gizmos.DrawRay(transform.position, tangentDirection * maxSpeed * 0.5f);
+            Gizmos.DrawRay(transform.position, -tangentDirection * maxSpeed * 0.5f);
+        }
+
+        // Draw current velocity
+        if (Application.isPlaying && rb != null)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawRay(transform.position, rb.linearVelocity * 0.5f);
+        }
+    }
+
+    /// <summary>
+    /// Logs debug messages when debug mode is enabled
+    /// </summary>
+    /// <param name="message">The message to log</param>
+    private void DebugLog(string message)
+    {
+        if (debugMode)
+        {
+            Debug.Log($"[PlayerController] {message}");
         }
     }
 }
