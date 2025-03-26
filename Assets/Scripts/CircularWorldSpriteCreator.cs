@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CircularWorldSpriteCreator : MonoBehaviour
 {
-  [Header("Reference Objects")]
+    [Header("Reference Objects")]
     [SerializeField] private SpriteRenderer _spriteToWrap;
     [SerializeField] private CircularWorldController _worldController;
     
@@ -56,7 +56,8 @@ public class CircularWorldSpriteCreator : MonoBehaviour
         float bendRadius = worldRadius + _distanceFromWorldCenter;
         
         _curvedObject = new GameObject("CurvedSprite");
-        _curvedObject.transform.position = transform.position;
+        _curvedObject.transform.SetParent(transform); 
+        _curvedObject.transform.localPosition = Vector3.zero; 
         
         if (!string.IsNullOrEmpty(_layerName))
         {
@@ -83,7 +84,6 @@ public class CircularWorldSpriteCreator : MonoBehaviour
         _lineRenderer.endWidth = _spriteToWrap.bounds.size.y;
         _lineRenderer.material = _spriteToWrap.material;
         _lineRenderer.textureMode = LineTextureMode.Stretch;
-        
         
         Vector3[] positions = new Vector3[_segmentCount];
         float angleStep = _arcAngle / (_segmentCount - 1);
@@ -177,7 +177,7 @@ public class CircularWorldSpriteCreator : MonoBehaviour
             _rigidbody = _curvedObject.AddComponent<Rigidbody2D>();
             if (_rigidbody != null)
             {
-                _rigidbody.bodyType = RigidbodyType2D.Static; 
+                _rigidbody.bodyType = RigidbodyType2D.Static;  // Set to static
                 _rigidbody.mass = _rigidbodyMass;
                 _rigidbody.gravityScale = _rigidbodyGravityScale;
                 _rigidbody.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -200,11 +200,21 @@ public class CircularWorldSpriteCreator : MonoBehaviour
     {
         if (!_updateInEditor || !Application.isEditor) return;
         
-        if (_curvedObject != null)
+        Transform[] allChildren = GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
         {
-            // In edit mode we need to use DestroyImmediate instead of Destroy
-            DestroyImmediate(_curvedObject);
+            if (child == transform) continue;
+            
+            if (child.name == "CurvedSprite")
+            {
+                DestroyImmediate(child.gameObject);
+            }
         }
+        
+        _curvedObject = null;
+        _lineRenderer = null;
+        _polygonCollider = null;
+        _rigidbody = null;
         
         if (_spriteToWrap != null)
         {
