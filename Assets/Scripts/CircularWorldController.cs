@@ -105,6 +105,7 @@ public class CircularWorldController : MonoBehaviour
 
     /// <summary>
     /// Get rotation angle to align an object with the world's center
+    /// Make sure the toes point out
     /// </summary>
     /// <param name="position">The position of the object to align</param>
     /// <returns>The rotation in Euler angles (Z axis) - points toward center</returns>
@@ -114,8 +115,21 @@ public class CircularWorldController : MonoBehaviour
         return Mathf.Atan2(toCenter.y, toCenter.x) * Mathf.Rad2Deg + 180f;
     }
 
+
+    /// <summary>
+    /// Get the direction of gravity for an object at the given position
+    /// </summary>
+    /// <param name="position">The position to calculate gravity for</param>
+    /// <returns>The gravity vector (normalized)</returns>
+    public Vector2 GetGravityDirection(Vector2 position)
+    {
+        Vector2 toCenter = (Vector2)transform.position - position;
+        return toCenter.normalized;
+    }
+
     /// <summary>
     /// Get tangent direction for movement along the circular world
+    /// This is the perpendicular to the direction toward the center
     /// </summary>
     /// <param name="position">The position to calculate tangent for</param>
     /// <returns>The tangent vector (normalized)</returns>
@@ -131,12 +145,37 @@ public class CircularWorldController : MonoBehaviour
     /// </summary>
     public float WorldRadius { get { return worldRadius; } }
 
+    /// <summary>
+    /// Get a point on the circular world at the specified angle and distance from center
+    /// </summary>
+    /// <param name="angle">Angle in degrees (0 = right, 90 = up)</param>
+    /// <param name="distance">Distance from center</param>
+    /// <returns>Point in world space</returns>
+    public Vector2 GetPointOnCircle(float angle, float distance)
+    {
+        float radians = angle * Mathf.Deg2Rad;
+        Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        return (Vector2)transform.position + direction * distance;
+    }
+
+    /// <summary>
+    /// Align a point to the circular contour at a specific radius
+    /// </summary>
+    /// <param name="point">The point to align</param>
+    /// <param name="radius">The radius to align to</param>
+    /// <returns>The aligned point</returns>
+    public Vector2 AlignPointToCircle(Vector2 point, float radius)
+    {
+        Vector2 toPoint = point - (Vector2)transform.position;
+        float angle = Mathf.Atan2(toPoint.y, toPoint.x);
+        return GetPointOnCircle(angle * Mathf.Rad2Deg, radius);
+    }
+
     private void OnDrawGizmos()
     {
-        // Only draw gizmos if debug mode is enabled
         if (!debugMode) return;
 
-        // Draw the world boundary
+        // Draw world boundary and background
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, worldRadius);
     }
