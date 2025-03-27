@@ -22,6 +22,10 @@ public class PlayerController : MonoBehaviour
     [Header("Air Movement")]
     [SerializeField] private float airRotationSpeedReduction = 0.8f; // How much speed is reduced when changing direction in air
 
+    [Header("Platform")]
+    [SerializeField] private float platformSnapDistance = 0.2f;
+    [SerializeField] private bool snapToPlatforms = true;
+
     private bool isGrounded;
     private float moveInput;
     private bool facingRight = true;
@@ -92,14 +96,25 @@ public class PlayerController : MonoBehaviour
         gravityDirection = worldController.GetGravityDirection(transform.position);
     }
     
-    // Check if player is on the ground
     private void CheckGroundState()
     {
         wasGrounded = isGrounded;
         
-        // Check both world edge and platforms in ground layer
+        // Check if we're on the world edge
         bool onWorldEdge = worldController.IsAtWorldEdge((Vector2)groundCheck.position, groundedDistanceThreshold);
-        bool onPlatform = CheckForPlatforms();
+        
+        // Check for platforms - cast from slightly below feet up 
+        Vector2 rayOrigin = (Vector2)groundCheck.position + gravityDirection * platformSnapDistance * 0.5f;
+        Vector2 rayDirection = -gravityDirection; // Cast opposite to gravity (up)
+        
+        RaycastHit2D hit = Physics2D.Raycast(
+            rayOrigin, 
+            rayDirection, 
+            platformSnapDistance, 
+            groundLayer
+        );
+        
+        bool onPlatform = hit.collider != null;
         
         // Player is grounded if either condition is true
         isGrounded = onWorldEdge || onPlatform;
@@ -116,14 +131,10 @@ public class PlayerController : MonoBehaviour
         
         if (debugMode && isGrounded)
         {
-            Debug.Log($"Grounded: World Edge={onWorldEdge}, Platform={onPlatform}");
+            string platformName = onPlatform ? hit.collider.gameObject.name : "none";
+            Debug.DrawRay(rayOrigin, rayDirection * platformSnapDistance, Color.cyan, 0.1f);
+            Debug.Log($"Grounded: World Edge={onWorldEdge}, Platform={onPlatform} ({platformName})");
         }
-    }
-    
-    // Check if player is touching any platforms in the ground layer
-    private bool CheckForPlatforms()
-    {
-        return Physics2D.OverlapCircle(groundCheck.position, groundedDistanceThreshold, groundLayer);
     }
     
     // Handle player leaving the ground (jumping or falling)
@@ -225,7 +236,6 @@ public class PlayerController : MonoBehaviour
         }
     }
     
-    // Update player position based on velocity
     private void UpdatePlayerPosition()
     {
         // Calculate new position
@@ -234,7 +244,43 @@ public class PlayerController : MonoBehaviour
         // Ensure player stays inside world
         newPosition = worldController.ConstrainToWorld(newPosition);
 
-        // Update position manually
+        // Check if we need to snap to curved platforms
+        if (isGrounded && snapToPlatforms)
+        {
+            // Cast a ray up from below the player's feet
+            // This ensures we hit the top of platforms
+            Vector2 rayOrigin = newPosition + gravityDirection * platformSnapDistance;
+            Vector2 rayDirection = -gravityDirection;
+            
+            RaycastHit2D hit = Physics2D.Raycast(
+                rayOrigin, 
+                rayDirection, 
+                platformSnapDistance * 2f, // Increased distance to ensure we hit the platform
+                groundLayer
+            );
+
+            if (hit.collider != null)
+            {
+                // Adjust the position to stay on the platform surface, offset enough to avoid noclips
+                newPosition = hit.point + (rayDirection * groundedDistanceThreshold);
+                
+                if (debugMode)
+                {
+                    Debug.DrawLine(rayOrigin, hit.point, Color.magenta, 0.1f);
+                    Debug.Log($"Snapping to platform at {hit.point}");
+                }
+            }
+            else
+            {
+                // If we're not over a platform, check if we're on the world edge
+                bool onWorldEdge = worldController.IsAtWorldEdge(newPosition, groundedDistanceThreshold);
+                if (!onWorldEdge)
+                {
+                    isGrounded = false;
+                }
+            }
+        }
+
         transform.position = newPosition;
     }
     
