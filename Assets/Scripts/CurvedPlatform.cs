@@ -27,19 +27,19 @@ public class CurvedPlatform : MonoBehaviour
 
     private bool _addRigidbody = true;
     private float _distanceFromWorldCenter = 0f;
+
+    private bool _initialized = false;
     private Vector3 _lastPosition;
     private Quaternion _lastRotation;
-    private bool _initialized = false;
-    
+
+    private void Awake()
+    {
+        InitializeComponents();
+    }
+
     private void Start()
     {
-        if (!Application.isPlaying) return;
-        
-        InitializeComponents();
-        
-        // Only create a curved sprite if one doesn't already exist
-        // This helps stop the duplication when entering play mode
-        if (_curvedObject == null)
+        if (_curvedObject == null && _spriteToWrap != null && _worldController != null)
         {
             CreateCurvedSprite();
         }
@@ -48,68 +48,67 @@ public class CurvedPlatform : MonoBehaviour
         _lastPosition = transform.position;
         _lastRotation = transform.rotation;
     }
+
     private void InitializeComponents()
     {
-        if (_spriteToWrap == null)
-        {
-            Debug.LogError("Sprite to wrap is not assigned!");
-            return;
-        }
-
         if (_worldController == null)
         {
             _worldController = Object.FindFirstObjectByType<CircularWorldController>();
-            if (_worldController == null)
-            {
-                Debug.LogError("CircularWorldController not found!");
-                return;
-            }
         }
         
-        // Check if we already have a curved sprite created
-        Transform[] allChildren = GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
+        // Check if we already have a curved sprite
+        Transform existingCurved = transform.Find("CurvedSprite");
+        if (existingCurved != null)
         {
-            if (child == transform) continue;
-            
-            if (child.name == "CurvedSprite")
-            {
-                _curvedObject = child.gameObject;
-                _lineRenderer = _curvedObject.GetComponent<LineRenderer>();
-                _polygonCollider = _curvedObject.GetComponent<PolygonCollider2D>();
-                _rigidbody = _curvedObject.GetComponent<Rigidbody2D>();
-                break;
-            }
+            _curvedObject = existingCurved.gameObject;
+            _lineRenderer = _curvedObject.GetComponent<LineRenderer>();
+            _polygonCollider = _curvedObject.GetComponent<PolygonCollider2D>();
+            _rigidbody = _curvedObject.GetComponent<Rigidbody2D>();
         }
     }
 
     private void Update()
     {
-        if (!Application.isPlaying) return;
+        if (!_initialized || !Application.isPlaying) return;
         
-        // Check if we've moved or rotated
-        if (_initialized && (transform.position != _lastPosition || transform.rotation != _lastRotation))
+        // Check if the object has moved or rotated during gameplay
+        if (transform.position != _lastPosition || transform.rotation != _lastRotation)
         {
             UpdateCurvedSprite();
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
         }
     }
+    
     private void UpdateCurvedSprite()
     {
-        // Clean up existing sprites
-        if (_curvedObject != null)
+        // Calculate new distance from world center
+        if (_worldController != null)
         {
-            Destroy(_curvedObject);
-            _curvedObject = null;
-            _lineRenderer = null;
-            _polygonCollider = null;
-            _rigidbody = null;
+            Vector2 toObject = transform.position - _worldController.transform.position;
+            float currentDistance = toObject.magnitude - _worldController.WorldRadius;
+            
+            // Update the distance parameter
+            _distanceFromWorldCenter = currentDistance;
+            
+            // Clean up existing curved object
+            if (_curvedObject != null)
+            {
+                Destroy(_curvedObject);
+                _curvedObject = null;
+                _lineRenderer = null;
+                _polygonCollider = null;
+                _rigidbody = null;
+            }
+            
+            // Create a new curved sprite at the updated position
+            if (_spriteToWrap != null)
+            {
+                CreateCurvedSprite();
+            }
         }
-        
-        CreateCurvedSprite();
     }
-
+    
     private void CreateCurvedSprite()
     {
         float worldRadius = _worldController.WorldRadius;
@@ -233,7 +232,7 @@ public class CurvedPlatform : MonoBehaviour
             _rigidbody = _curvedObject.AddComponent<Rigidbody2D>();
             if (_rigidbody != null)
             {
-                _rigidbody.bodyType = RigidbodyType2D.Static;  // Set to static
+                _rigidbody.bodyType = RigidbodyType2D.Static;
                 _rigidbody.mass = _rigidbodyMass;
                 _rigidbody.gravityScale = _rigidbodyGravityScale;
                 _rigidbody.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -259,43 +258,46 @@ public class CurvedPlatform : MonoBehaviour
     {
         if (!Application.isEditor) return;
         
-        // Clean up existing children
-        Transform[] allChildren = GetComponentsInChildren<Transform>();
-        foreach (Transform child in allChildren)
+        // Clean up existing children but only in edit mode
+        if (!Application.isPlaying)
         {
-            if (child == transform) continue;
-            
-            if (child.name == "CurvedSprite")
+            Transform[] allChildren = GetComponentsInChildren<Transform>();
+            foreach (Transform child in allChildren)
             {
-                DestroyImmediate(child.gameObject);
-            }
-        }
-        
-        _curvedObject = null;
-        _lineRenderer = null;
-        _polygonCollider = null;
-        _rigidbody = null;
-        
-        if (_spriteToWrap != null)
-        {
-            if (_worldController == null)
-            {
-                _worldController = Object.FindFirstObjectByType<CircularWorldController>();
+                if (child == transform) continue;
+                
+                if (child.name == "CurvedSprite")
+                {
+                    DestroyImmediate(child.gameObject);
+                }
             }
             
-            if (_worldController != null)
+            _curvedObject = null;
+            _lineRenderer = null;
+            _polygonCollider = null;
+            _rigidbody = null;
+            
+            if (_spriteToWrap != null)
             {
-                CreateCurvedSprite();
-                _lastEditorPosition = transform.position;
-                _lastEditorRotation = transform.rotation;
+                if (_worldController == null)
+                {
+                    _worldController = Object.FindFirstObjectByType<CircularWorldController>();
+                }
+                
+                if (_worldController != null)
+                {
+                    CreateCurvedSprite();
+                    _lastEditorPosition = transform.position;
+                    _lastEditorRotation = transform.rotation;
+                }
             }
+            
+            #if UNITY_EDITOR
+            // Subscribe to editor update event
+            EditorApplication.update -= OnEditorUpdate;
+            EditorApplication.update += OnEditorUpdate;
+            #endif
         }
-        
-        #if UNITY_EDITOR
-        // Subscribe to editor update event
-        EditorApplication.update -= OnEditorUpdate;
-        EditorApplication.update += OnEditorUpdate;
-        #endif
     }
 
     #if UNITY_EDITOR
@@ -309,10 +311,9 @@ public class CurvedPlatform : MonoBehaviour
                 // Calculate new distance from world center
                 if (_worldController != null)
                 {
-                    Vector2 toObject = (transform.position - _worldController.transform.position);
+                    Vector2 toObject = transform.position - _worldController.transform.position;
                     float currentDistance = toObject.magnitude - _worldController.WorldRadius;
                     
-                    // Update the distance parameter
                     _distanceFromWorldCenter = currentDistance;
                     
                     // Clean up existing children
