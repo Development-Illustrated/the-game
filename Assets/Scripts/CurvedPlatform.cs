@@ -1,6 +1,9 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
-public class CircularWorldSpriteCreator : MonoBehaviour
+public class CurvedPlatform : MonoBehaviour
 {
     [Header("Reference Objects")]
     [SerializeField] private SpriteRenderer _spriteToWrap;
@@ -10,12 +13,7 @@ public class CircularWorldSpriteCreator : MonoBehaviour
     [SerializeField, Range(3, 50)] private int _segmentCount = 10;
     [SerializeField] private float _arcAngle = 30f;
     
-    [Header("Position Settings")]
-    [SerializeField] private float _distanceFromWorldCenter = 0f;
-    [SerializeField] private bool _alignWithGravity = true;
-    
     [Header("Physics Settings")]
-    [SerializeField] private bool _addRigidbody = true;
     [SerializeField] private float _rigidbodyMass = 1f;
     [SerializeField] private float _rigidbodyGravityScale = 0f;
     
@@ -26,17 +24,38 @@ public class CircularWorldSpriteCreator : MonoBehaviour
     private LineRenderer _lineRenderer;
     private PolygonCollider2D _polygonCollider;
     private Rigidbody2D _rigidbody;
+
+    private bool _addRigidbody = true;
+    private float _distanceFromWorldCenter = 0f;
+    private Vector3 _lastPosition;
+    private Quaternion _lastRotation;
+    private bool _initialized = false;
     
     private void Start()
     {
         if (!Application.isPlaying) return;
         
+        InitializeComponents();
+        
+        // Only create a curved sprite if one doesn't already exist
+        // This helps stop the duplication when entering play mode
+        if (_curvedObject == null)
+        {
+            CreateCurvedSprite();
+        }
+        
+        _initialized = true;
+        _lastPosition = transform.position;
+        _lastRotation = transform.rotation;
+    }
+    private void InitializeComponents()
+    {
         if (_spriteToWrap == null)
         {
             Debug.LogError("Sprite to wrap is not assigned!");
             return;
         }
-        
+
         if (_worldController == null)
         {
             _worldController = Object.FindFirstObjectByType<CircularWorldController>();
@@ -47,18 +66,59 @@ public class CircularWorldSpriteCreator : MonoBehaviour
             }
         }
         
+        // Check if we already have a curved sprite created
+        Transform[] allChildren = GetComponentsInChildren<Transform>();
+        foreach (Transform child in allChildren)
+        {
+            if (child == transform) continue;
+            
+            if (child.name == "CurvedSprite")
+            {
+                _curvedObject = child.gameObject;
+                _lineRenderer = _curvedObject.GetComponent<LineRenderer>();
+                _polygonCollider = _curvedObject.GetComponent<PolygonCollider2D>();
+                _rigidbody = _curvedObject.GetComponent<Rigidbody2D>();
+                break;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (!Application.isPlaying) return;
+        
+        // Check if we've moved or rotated
+        if (_initialized && (transform.position != _lastPosition || transform.rotation != _lastRotation))
+        {
+            UpdateCurvedSprite();
+            _lastPosition = transform.position;
+            _lastRotation = transform.rotation;
+        }
+    }
+    private void UpdateCurvedSprite()
+    {
+        // Clean up existing sprites
+        if (_curvedObject != null)
+        {
+            Destroy(_curvedObject);
+            _curvedObject = null;
+            _lineRenderer = null;
+            _polygonCollider = null;
+            _rigidbody = null;
+        }
+        
         CreateCurvedSprite();
     }
-    
+
     private void CreateCurvedSprite()
     {
         float worldRadius = _worldController.WorldRadius;
         float bendRadius = worldRadius + _distanceFromWorldCenter;
-        
+
         _curvedObject = new GameObject("CurvedSprite");
-        _curvedObject.transform.SetParent(transform); 
-        _curvedObject.transform.localPosition = Vector3.zero; 
-        
+        _curvedObject.transform.SetParent(transform);
+        _curvedObject.transform.localPosition = Vector3.zero;
+
         if (!string.IsNullOrEmpty(_layerName))
         {
             int layerIndex = LayerMask.NameToLayer(_layerName);
@@ -71,60 +131,56 @@ public class CircularWorldSpriteCreator : MonoBehaviour
                 Debug.LogWarning($"Layer '{_layerName}' not found in project settings!");
             }
         }
-        
+
         _lineRenderer = _curvedObject.AddComponent<LineRenderer>();
         if (_lineRenderer == null)
         {
             Debug.LogError("Failed to add LineRenderer component!");
             return;
         }
-        
+
         _lineRenderer.positionCount = _segmentCount;
         _lineRenderer.startWidth = _spriteToWrap.bounds.size.y;
         _lineRenderer.endWidth = _spriteToWrap.bounds.size.y;
         _lineRenderer.material = _spriteToWrap.material;
         _lineRenderer.textureMode = LineTextureMode.Stretch;
-        
+
+        // Get the angle of our position relative to world center
+        Vector2 directionToWorld = (_worldController.transform.position - transform.position).normalized;
+        float mainAngle = Mathf.Atan2(directionToWorld.y, directionToWorld.x) * Mathf.Rad2Deg + 180f;
+
         Vector3[] positions = new Vector3[_segmentCount];
         float angleStep = _arcAngle / (_segmentCount - 1);
         float startAngle = -_arcAngle / 2f;
-        
-        Vector2 basePos = transform.position;
-        Vector2 gravityDir;
-        float angleOffset = 0f;
-        
-        if (_alignWithGravity)
-        {
-            gravityDir = _worldController.GetGravityDirection(basePos);
-            angleOffset = Mathf.Atan2(gravityDir.y, gravityDir.x) * Mathf.Rad2Deg + 90f;
-        }
-        
+
+        float angleOffset = mainAngle;
+
         for (int i = 0; i < _segmentCount; i++)
         {
             float angle = startAngle + (angleStep * i);
             float worldAngle = angle + angleOffset;
             float radians = worldAngle * Mathf.Deg2Rad;
-            
+
             float x = Mathf.Cos(radians) * bendRadius;
             float y = Mathf.Sin(radians) * bendRadius;
-            
+
             positions[i] = new Vector3(x, y, 0) + _worldController.transform.position;
         }
-        
+
         _lineRenderer.SetPositions(positions);
-        
+
         _polygonCollider = _curvedObject.AddComponent<PolygonCollider2D>();
         if (_polygonCollider != null)
         {
             Vector2[] colliderPoints = new Vector2[_segmentCount * 2];
-            
+
             float halfHeight = _spriteToWrap.bounds.size.y / 2;
-            
+
             for (int i = 0; i < _segmentCount; i++)
             {
                 Vector3 position = positions[i];
                 Vector3 localPos = position - _curvedObject.transform.position;
-                
+
                 Vector3 normalDir;
                 if (i < _segmentCount - 1)
                 {
@@ -138,16 +194,16 @@ public class CircularWorldSpriteCreator : MonoBehaviour
                     Vector3 tangent = (position - prevPos).normalized;
                     normalDir = new Vector3(-tangent.y, tangent.x, 0).normalized;
                 }
-                
+
                 colliderPoints[i] = localPos + (Vector3)(normalDir * halfHeight);
             }
-            
+
             for (int i = 0; i < _segmentCount; i++)
             {
                 int reverseIndex = _segmentCount - 1 - i;
                 Vector3 position = positions[reverseIndex];
                 Vector3 localPos = position - _curvedObject.transform.position;
-                
+
                 Vector3 normalDir;
                 if (reverseIndex < _segmentCount - 1)
                 {
@@ -161,17 +217,17 @@ public class CircularWorldSpriteCreator : MonoBehaviour
                     Vector3 tangent = (position - prevPos).normalized;
                     normalDir = new Vector3(-tangent.y, tangent.x, 0).normalized;
                 }
-                
+
                 colliderPoints[_segmentCount + i] = localPos - (Vector3)(normalDir * halfHeight);
             }
-            
+
             _polygonCollider.points = colliderPoints;
         }
         else
         {
             Debug.LogError("Failed to add PolygonCollider2D component!");
         }
-        
+
         if (_addRigidbody)
         {
             _rigidbody = _curvedObject.AddComponent<Rigidbody2D>();
@@ -191,15 +247,19 @@ public class CircularWorldSpriteCreator : MonoBehaviour
             }
         }
     }
-    
+
     [Header("Editor Settings")]
     [SerializeField] private bool _updateInEditor = true;
     [SerializeField] private bool _showDebugGizmos = true;
-    
+
+    private Vector3 _lastEditorPosition;
+    private Quaternion _lastEditorRotation;
+
     private void OnValidate()
     {
-        if (!_updateInEditor || !Application.isEditor) return;
+        if (!Application.isEditor) return;
         
+        // Clean up existing children
         Transform[] allChildren = GetComponentsInChildren<Transform>();
         foreach (Transform child in allChildren)
         {
@@ -226,26 +286,87 @@ public class CircularWorldSpriteCreator : MonoBehaviour
             if (_worldController != null)
             {
                 CreateCurvedSprite();
+                _lastEditorPosition = transform.position;
+                _lastEditorRotation = transform.rotation;
+            }
+        }
+        
+        #if UNITY_EDITOR
+        // Subscribe to editor update event
+        EditorApplication.update -= OnEditorUpdate;
+        EditorApplication.update += OnEditorUpdate;
+        #endif
+    }
+
+    #if UNITY_EDITOR
+    private void OnEditorUpdate()
+    {
+        if (!Application.isPlaying && this != null)
+        {
+            // Check if position has changed in editor
+            if (transform.position != _lastEditorPosition || transform.rotation != _lastEditorRotation)
+            {
+                // Calculate new distance from world center
+                if (_worldController != null)
+                {
+                    Vector2 toObject = (transform.position - _worldController.transform.position);
+                    float currentDistance = toObject.magnitude - _worldController.WorldRadius;
+                    
+                    // Update the distance parameter
+                    _distanceFromWorldCenter = currentDistance;
+                    
+                    // Clean up existing children
+                    Transform[] allChildren = GetComponentsInChildren<Transform>();
+                    foreach (Transform child in allChildren)
+                    {
+                        if (child == transform) continue;
+                        
+                        if (child.name == "CurvedSprite")
+                        {
+                            DestroyImmediate(child.gameObject);
+                        }
+                    }
+                    
+                    _curvedObject = null;
+                    _lineRenderer = null;
+                    _polygonCollider = null;
+                    _rigidbody = null;
+                    
+                    if (_spriteToWrap != null)
+                    {
+                        CreateCurvedSprite();
+                    }
+                }
+                
+                _lastEditorPosition = transform.position;
+                _lastEditorRotation = transform.rotation;
             }
         }
     }
     
+    private void OnDestroy()
+    {
+        // Unsubscribe from editor update when destroyed
+        EditorApplication.update -= OnEditorUpdate;
+    }
+    #endif
+
     private void OnDrawGizmos()
     {
         if (!_showDebugGizmos || _curvedObject == null) return;
-        
+
         Gizmos.color = Color.yellow;
         if (_lineRenderer != null && _lineRenderer.positionCount > 1)
         {
             Vector3[] positions = new Vector3[_lineRenderer.positionCount];
             _lineRenderer.GetPositions(positions);
-            
+
             for (int i = 0; i < positions.Length - 1; i++)
             {
                 Gizmos.DrawLine(positions[i], positions[i + 1]);
             }
         }
-        
+
         Gizmos.color = Color.cyan;
         if (_worldController != null)
         {
