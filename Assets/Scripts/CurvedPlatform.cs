@@ -248,7 +248,6 @@ public class CurvedPlatform : MonoBehaviour
     }
 
     [Header("Editor Settings")]
-    [SerializeField] private bool _updateInEditor = true;
     [SerializeField] private bool _showDebugGizmos = true;
 
     private Vector3 _lastEditorPosition;
@@ -293,6 +292,7 @@ public class CurvedPlatform : MonoBehaviour
             }
             
             #if UNITY_EDITOR
+
             // Subscribe to editor update event
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.update += OnEditorUpdate;
