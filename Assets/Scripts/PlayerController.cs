@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -13,6 +14,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundFriction = 0.8f;
     [SerializeField] private float airFriction = 0.95f;
     [SerializeField] private float fallAcceleration = 1.5f; // Additional acceleration when falling
+
+    [Header("Jump Parameters")]
+    [SerializeField] private bool allowDoubleJump = true;
+    [SerializeField] private float doubleJumpForce = 8f;
 
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;
@@ -35,6 +40,7 @@ public class PlayerController : MonoBehaviour
     private float savedHorizontalSpeed = 0f;
     private int lastAirDirection = 0; // 0 = neutral, -1 = left, 1 = right
     private bool wasGrounded; // Track previous grounded state
+    private bool canDoubleJump = false;
 
     // Start is called once before the first execution of Update
     void Start()
@@ -81,12 +87,34 @@ public class PlayerController : MonoBehaviour
     // Handle jump input and perform jump if conditions are met
     private void HandleJumpInput()
     {
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (Input.GetButtonDown("Jump"))
         {
-            if (debugMode) Debug.Log("On ground and jump button pressed");
-            
-            // Apply jump force in the opposite direction of gravity
-            velocity += gravityDirection * jumpForce;
+            if (isGrounded)
+            {
+                if (debugMode) Debug.Log("On ground and jump button pressed");
+
+                // Apply jump force in the opposite direction of gravity
+                velocity += gravityDirection * jumpForce;
+
+                if (allowDoubleJump)
+                {
+                    canDoubleJump = true;
+                }
+            }
+            else if (canDoubleJump && allowDoubleJump)
+            {
+                if (debugMode) Debug.Log("Double jump executed");
+
+                float verticalComponent = Vector2.Dot(velocity, gravityDirection);
+                if (verticalComponent > 0) // Only apply double jump if we're actually falling
+                {
+                    velocity -= verticalComponent * (-gravityDirection);
+                }
+
+                velocity += gravityDirection * doubleJumpForce;
+
+                canDoubleJump = false;
+            }
         }
     }
     
@@ -162,6 +190,8 @@ public class PlayerController : MonoBehaviour
         Vector2 tangent = worldController.GetTangentDirection(transform.position);
         float horizontalComponent = Vector2.Dot(velocity, -tangent);
         velocity = -tangent * horizontalComponent;
+
+        canDoubleJump = false;
     }
     
     // Calculate forces for movement
