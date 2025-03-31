@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: PlasmaShot
   m_EditorClassIdentifier: 
   damage: 69420
-  velocity: 420
+  velocity: 5
   lifetime: 5
   gravityScale: 0
-  destroyOnHit: 0
+  destroyOnHit: 1
   hitMaxTimes: 1
   hitCooldown: 0.5
