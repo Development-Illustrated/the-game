@@ -6,13 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/Test Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
   - enabled: 1
-    path: Assets/Scenes/Network.unity
+    path: Assets/Scenes/Test Scenes/Network.unity
     guid: 8a1b5f8966f624eccbcea56950f62087
   - enabled: 1
-    path: Assets/Scenes/CircleRunning(Networked).unity
+    path: Assets/Scenes/Test Scenes/CircleRunning(Networked).unity
     guid: 897dd7805e30a46e2a2bde2588efc8a0
+  - enabled: 1
+    path: Assets/Scenes/Test Scenes/TestFullScene.unity
+    guid: 33eef3174ef4a4145a916a8bf3a82c49
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

@@ -1,0 +1,12 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/Stylesheets/MainMenu.uss?fileID=7433441132597879392&amp;guid=8a2fd7b6fb0e32f41a112c684f26c1c0&amp;type=3#MainMenu" />
+    <engine:VisualElement name="Container" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.57);">
+        <engine:Label text="orbattle" name="Header" class="header" />
+        <engine:VisualElement name="ButtonContainer" class="button-container" style="flex-grow: 1; margin-top: 287px; background-image: none; background-repeat: no-repeat no-repeat;">
+            <engine:Button text="Join Game" name="JoinGameBtn" class="button" />
+            <engine:Button text="Host Game" name="HostBtn" class="button" />
+            <engine:Button text="Settings" name="SettingsBtn" class="button" />
+            <engine:Button text="Quit" name="QuitBtn" class="button" />
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>
