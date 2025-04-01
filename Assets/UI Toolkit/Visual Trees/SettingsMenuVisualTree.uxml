@@ -1,0 +1,13 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/Stylesheets/MainMenu.uss?fileID=7433441132597879392&amp;guid=8a2fd7b6fb0e32f41a112c684f26c1c0&amp;type=3#MainMenu" />
+    <engine:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.57);">
+        <engine:Label text="settings" name="Header" class="header" />
+        <engine:VisualElement name="SettingsContainer" style="flex-grow: 1; margin-left: 35px; margin-right: 35px;">
+            <engine:Slider label="Music Volume" value="42" high-value="100" class="slider" />
+            <engine:Slider label="Effect Volume" value="42" high-value="100" class="slider" />
+            <engine:Slider label="Menu Volume" value="42" high-value="100" class="slider" />
+            <engine:DropdownField label="Resolution" class="slider" />
+        </engine:VisualElement>
+        <engine:Button text="Back" name="BackBtn" class="button" />
+    </engine:VisualElement>
+</engine:UXML>

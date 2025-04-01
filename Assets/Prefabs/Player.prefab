@@ -420,12 +420,16 @@ MonoBehaviour:
   groundFriction: 0.8
   airFriction: 0.98
   fallAcceleration: 1.8
+  allowDoubleJump: 1
+  doubleJumpForce: 8
   groundCheck: {fileID: 7367262922151610123}
   groundedDistanceThreshold: 0.1
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
   airRotationSpeedReduction: 0.8
+  platformSnapDistance: 0.2
+  snapToPlatforms: 1
 --- !u!70 &7774776814226888364
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

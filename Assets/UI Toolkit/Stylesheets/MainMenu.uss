@@ -1,0 +1,63 @@
+.header {
+    font-size: 64px;
+    -unity-font-style: normal;
+    -unity-text-align: upper-center;
+    padding-top: 0;
+    margin-top: 166px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 5px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgb(70, 70, 70);
+    transition-duration: 0.3s;
+    -unity-font-definition: resource('UI/Fonts/Kenney Future');
+    color: rgb(236, 139, 115);
+}
+
+.header:hover {
+    scale: 1.05;
+    color: rgb(255, 165, 0);
+}
+
+.button-container {
+    justify-content: center;
+    align-self: center;
+    flex-grow: 0;
+    margin-top: 40px;
+}
+
+.button {
+    width: 220px;
+    height: 60px;
+    margin-bottom: 24px;
+    background-color: rgb(50, 50, 150);
+    border-width: 3px;
+    border-color: rgb(100, 100, 200);
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    -unity-font-style: bold;
+    transition-duration: 0.2s;
+    -unity-font-definition: resource('UI/Fonts/Kenney Future Narrow');
+}
+
+.button:hover {
+    background-color: rgb(70, 70, 170);
+    scale: 1.05;
+    color: rgb(255, 255, 200);
+    border-color: rgb(120, 120, 220);
+    transition-property: all;
+    transition-duration: 0.25s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
+}
+
+.button:active {
+    background-color: rgb(40, 40, 130);
+    scale: 0.95;
+}
+
+.slider {
+    -unity-font-definition: resource('UI/Fonts/Kenney Future');
+    color: rgb(255, 215, 0);
+    -unity-font-style: normal;
+}
