@@ -60,7 +60,7 @@ public class HealthBar : MonoBehaviour
         healthBarFill.GetComponent<Image>().color = color;
     }
 
-    void TakeDamage(float amount, GameObject damageSource)
+    public void TakeDamage(float amount, GameObject damageSource)
     {
         if (isDead) return;
 
