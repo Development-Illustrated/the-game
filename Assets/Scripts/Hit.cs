@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
 
 // Interface for objects that can hit others
 public interface IHitter
@@ -9,7 +10,7 @@ public interface IHitter
     void ApplyDamage(GameObject target);
 }
 
-public class Hit : MonoBehaviour, IHitter
+public class Hit : NetworkBehaviour, IHitter
 {
     [Header("Damage Settings")]
     [SerializeField] private float damage = 10f;
