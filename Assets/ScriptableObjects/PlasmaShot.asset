@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b421b477fc6704290b09e7b03ea84649, type: 3}
   m_Name: PlasmaShot
   m_EditorClassIdentifier: 
-  damage: 69420
+  damage: 33
   velocity: 5
   lifetime: 5
   gravityScale: 0
